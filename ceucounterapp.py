@@ -1,5 +1,6 @@
 import os, sys
 from PIL import Image
+import tifffile
 import pytesseract
 import csv
 import pandas as pd
@@ -7,7 +8,7 @@ import shutil
 import os.path
 import pickle
 
-
+#WINDOWS
 start_input = input('Load Previous Directories? y or n')
 if start_input == 'y':
 	pickle_in = open("dict.pickle", "rb")
@@ -33,7 +34,7 @@ emplist_wval = ['Merwede@1', 'Merwede@1@2', 'Perez@1@M1', 'Perez@0.5']
 for infile in os.listdir(in_path):
     if infile[-3:] == "tif":
 	    outfile = infile[:-3] + "jpeg"
-	    im = Image.open(infile)
+	    im = tifffile.imread(infile)
 	    out = im.convert("RGB")
 	    out.save(outfile, "JPEG", quality=90)
 
