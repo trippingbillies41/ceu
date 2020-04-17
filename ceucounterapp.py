@@ -5,7 +5,7 @@ import pandas as pd
 import shutil
 import os.path
 import pickle
-
+import numpy as np
 #WINDOWS
 # Establish Directories
 dir_input = input('Load Previous Directories? y or n: ')
@@ -30,40 +30,23 @@ emplist_wval = []
 emptemplist = []
 values = []
 
-# Creating Names List
-emp_input = input('Load Previous Employee List? y or n: ')
-if emp_input == 'y':
-	emp_pkl = open("emp_pkl.pickle", "rb")
-	emp_pkl_s = pickle.load(emp_pkl)
+# Table Directory
+if dir_pkl_s == None:
+	dir_table = input('Table Directory: ')
 else:
-	emp_pkl_s = 'startingplaceholder'
-emplist = [emp_pkl_s]
+	dir_table = (dir_pkl_s[2])
 
-emp_add_input = input('Add New Names? y or n: ')
-if emp_add_input == 'y':
-	emps = ""
-	while emps != "done":
-		emps = input("Add Employee Names, Type 'done' to Finish: ")
-		emplist.append(emps)
-		print(emplist)
-		print(emptemplist)
-	emplist.remove('done')
-	if 'startingplaceholder' in emplist:
-		emplist.remove('startingplaceholder')
-	else:
-		pass
-else:
-	pass
+# Loading Names From Excel Table
+df = pd.read_csv(dir_table)
+print(df)
+emplist = df['Name'].tolist()
 
 # Creating Values List
 val_input = input('Load Previous Values? y or n: ')
 if val_input == 'y':
-	val_pkl = open("val_pkl.pickle", "rb")
-	val_pkl_s = pickle.load(val_pkl)
+	values = list(np.load('values.npy'))
 else:
-	val_pkl_s = 'startingplaceholder'
-values = [val_pkl_s]
-
+	values = ['startingplaceholder']
 val_add_input = input('Add New Values? y or n: ')
 if val_add_input == "y":
 	val = ""
@@ -106,12 +89,6 @@ print(emplist_wval)
 # 		f = open(outfiletext, "w") 
 # 		f.write(text) 
 # 		f.close()
-
-# Table Directory
-if dir_pkl_s == None:
-	dir_table = input('Table Directory')
-else:
-	dir_table = (dir_pkl_s[2])
 
 # # Count Certificates
 
@@ -183,18 +160,20 @@ else:
 # 		os.remove(remove_file)
 
 # Create Save Files
-# Directories
-save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert}
-pickle_out = open("dir_pkl.pickle", "wb")
-pickle.dump(save_dict, pickle_out)
-pickle_out.close()
-# Names
-save_dict = emplist
-pickle_out = open("emp_pkl.pickle", "wb")
-pickle.dump(save_dict, pickle_out)
-pickle_out.close()
-# Values
-save_dict = values
-pickle_out = open("val_pkl.pickle", "wb")
-pickle.dump(save_dict, pickle_out)
-pickle_out.close()
+save_question = input('Save Directories & Values? y or n: ')
+if save_question == 'y':
+	# Directories
+	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert}
+	pickle_out = open("dir_pkl.pickle", "wb")
+	pickle.dump(save_dict, pickle_out)
+	pickle_out.close()
+	# Names
+	save_dict = emplist
+	pickle_out = open("emp_pkl.pickle", "wb")
+	pickle.dump(save_dict, pickle_out)
+	pickle_out.close()
+	# Values
+	save_values = np.array(values)
+	np.save('values', save_values)
+else:
+	pass
