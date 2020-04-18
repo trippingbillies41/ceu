@@ -109,36 +109,49 @@ for txt_file in os.listdir(in_path):
  		elif delim_count == 2:
  			cert_name, cert_value, cert_m = certificatename.split("@")	
 
-		# Rename PDFs
- 		for pdf in os.listdir(in_path):
- 			arg_1 = pdf[-3:] == "pdf"
- 			arg_2 = pdf[:-4] == (txt_file[:-9])
- 			if arg_1 and arg_2 == True:
- 				root_name = txt_file[:-9]
- 				old_name = txt_file[:-9] + ".pdf"
- 				new_name = cert_name + "!" + root_name + ".pdf"
- 				pdf = os.rename(old_name, new_name)
- 		
- 		# Open Table
- 		df2 = pd.read_csv(dir_table, index_col=[0])
-
- 		# Cells - change cert_name back to x
- 		cell_v = df2.loc[cert_name, "CEU"]
- 		cell_m1 = df2.loc[cert_name, "M1"]
- 		cell_m2 = df2.loc[cert_name, "M2"]
- 		# Adding CEU Value
- 		df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
- 		# Assigning Mandatories
+ 		# Certificate Read Error - No Cert Name
  		try:
- 			if cert_m == 'M1':
- 				df2.loc[cert_name, "M1"] = 'X'
- 			elif cert_m == 'M2':
- 				df2.loc[cert_name, "M2"] = 'X'
+ 			cert_name
  		except NameError:
- 			pass
-		# Clear Mandatory
- 		cert_m = None
- 		df2.to_csv(dir_table)
+ 			print('ERRORS FOUND!')
+ 			error_pdf = txt_file[:-9] + ".pdf"
+ 			error_destination = os.path.join(in_path, "ERRORS")
+ 			shutil.move(error_pdf, error_destination)
+ 			error_jpeg = txt_file[:-9] + ".jpeg"
+ 			error_txt = txt_file
+ 			os.remove(error_jpeg)
+ 			os.remove(error_txt)
+ 		else:
+			# Rename PDFs
+	 		for pdf in os.listdir(in_path):
+	 			arg_1 = pdf[-3:] == "pdf"
+	 			arg_2 = pdf[:-4] == (txt_file[:-9])
+	 			if arg_1 and arg_2 == True:
+	 				root_name = txt_file[:-9]
+	 				old_name = txt_file[:-9] + ".pdf"
+	 				new_name = cert_name + "!" + root_name + ".pdf"
+	 				pdf = os.rename(old_name, new_name)
+	 		
+	 		# Open Table
+	 		df2 = pd.read_csv(dir_table, index_col=[0])
+
+	 		# Cells - change cert_name back to x
+	 		cell_v = df2.loc[cert_name, "CEU"]
+	 		cell_m1 = df2.loc[cert_name, "M1"]
+	 		cell_m2 = df2.loc[cert_name, "M2"]
+	 		# Adding CEU Value
+	 		df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
+	 		# Assigning Mandatories
+	 		try:
+	 			if cert_m == 'M1':
+	 				df2.loc[cert_name, "M1"] = 'X'
+	 			elif cert_m == 'M2':
+	 				df2.loc[cert_name, "M2"] = 'X'
+	 		except NameError:
+	 			pass
+			# Clear Mandatory
+	 		cert_m = None
+	 		df2.to_csv(dir_table)
 
 # Certificate Directory
 if dir_pkl_s == None:
@@ -169,11 +182,6 @@ if save_question == 'y':
 	# Directories
 	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert}
 	pickle_out = open("dir_pkl.pickle", "wb")
-	pickle.dump(save_dict, pickle_out)
-	pickle_out.close()
-	# Names
-	save_dict = emplist
-	pickle_out = open("emp_pkl.pickle", "wb")
 	pickle.dump(save_dict, pickle_out)
 	pickle_out.close()
 	# Values
