@@ -9,6 +9,8 @@ import pickle
 import numpy as np
 import pytesseract
 
+# Print Instructions
+
 # Establish Directories
 dir_input = input('Load Previous Directories? y or n: ')
 if dir_input == 'y':
@@ -25,7 +27,7 @@ in_path = (new_dir_input)
 
 # Change Working Directory
 os.chdir(in_path)
-
+error_destination = os.path.join(in_path, "ERRORS")
 # Estalish Employee Lists
 emplist = []
 emplist_wval = []
@@ -39,8 +41,24 @@ else:
 
 # Loading Names From Excel Table
 df = pd.read_csv(dir_table)
-print(df)
 emplist = df['Name'].tolist()
+
+# Certificate Directory
+if dir_pkl_s == None:
+	dir_cert = input('Employee Certificate Parent Directory: ')
+else:
+	dir_cert = (dir_pkl_s[3])
+# Check Names vs Folders
+subfolders = os.listdir(dir_cert)
+os.chdir(dir_cert)
+for name in emplist:
+	if name in subfolders:
+		pass
+	else:
+		os.mkdir(name)
+		print("Folder", name, "Created in Employee Certificate Directory.")
+
+os.chdir(in_path)
 
 # Creating Values List
 val_input = input('Load Previous Values? y or n: ')
@@ -53,6 +71,7 @@ if val_add_input == "y":
 	val = ""
 	print('Values Must Start With "@".')
 	print('Mandatories (ex: @1@M1) Must Be Added First.')
+	print('Half Values Must Be Entered Prior to Whole Values. (ex: @1.5 > @1)')
 	print('Type "done" to Finish.')
 	while val != "done":
 		val = input("Add Values With '@' as a Delimiter: ")
@@ -69,112 +88,120 @@ else:
 	pass
 
 # Names with Values
-emplist_wval = [(e+v) for e in emplist for v in values]
+emplist_wval = set((e+v) for e in emplist for v in values)
 
-# Create JPEG Files
-for infile in os.listdir(in_path):
-    if infile[-3:] == "pdf":
-	    outfile = infile[:-3] + "jpeg"
-	    outf = convert_from_path(infile)
-	    for out in outf:
-	    	out.save(outfile, 'JPEG')
+# Define Functions
 
-# Create TXT Files
-for cert_jpeg in os.listdir(in_path):
- 	if cert_jpeg[-4:] == "jpeg":
+# Create JPEG
+def certificate_counter(x):
+	out_jpeg = x[:-3] + "jpeg"
+	outf = convert_from_path(x)
+	for out in outf:
+		out.save(out_jpeg, 'JPEG')
+	# Read TXT from JPEG
+	text = pytesseract.image_to_string(Image.open(out_jpeg))
+	text = text.replace('-\n', '')
+	# Create TXT File
+	outfiletext = (x[:-4] + ".txt")
+	f = open(outfiletext, "w")
+	f.write(text)
+	f.close()
+	t = open(outfiletext, 'r')
+	readtext = t.read()
+	for iteration in emplist_wval:
+		if iteration in readtext:
+			certificatename = iteration
+			delim_count = certificatename.count('@')
+			if delim_count == 1:
+				cert_name, cert_value = certificatename.split("@")
+				print(cert_name, cert_value)
+				# Rename PDF
+				for pdf in os.listdir(in_path):
+					arg_1 = pdf[-3:] == "pdf"
+					arg_2 = pdf[:-4] == (outfiletext[:-4])
+					if arg_1 and arg_2 == True:
+						root_name = outfiletext[:-4]
+						old_name = outfiletext[:-4] + ".pdf"
+						new_name = cert_name + "!" + root_name + ".pdf"
+						pdf = os.rename(old_name, new_name)
+		 		# Open Table
+				df2 = pd.read_csv(dir_table, index_col=[0])
+				# Cells
+				cell_v = df2.loc[cert_name, "CEU"]
+				cell_m1 = df2.loc[cert_name, "M1"]
+				cell_m2 = df2.loc[cert_name, "M2"]
+				# Adding CEU Value
+				df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
+				# Save Table
+				df2.to_csv(dir_table)
+				# Move Certificate to Employee Files
+				destination = os.path.join(dir_cert, cert_name)
+				move_pdf = cert_name + "!" + x
+				shutil.move(move_pdf, destination)
+				# Clear Variables
+				cert_name = None
+				cert_value = None
+				break
+			elif delim_count == 2:
+				cert_name, cert_value, cert_m = certificatename.split("@")	
+				print(cert_name, cert_value, cert_m)
+				# Rename PDF
+				for pdf in os.listdir(in_path):
+					arg_1 = pdf[-3:] == "pdf"
+					arg_2 = pdf[:-4] == (outfiletext[:-4])
+					if arg_1 and arg_2 == True:
+						root_name = outfiletext[:-4]
+						old_name = outfiletext[:-4] + ".pdf"
+						new_name = cert_name + "!" + root_name + ".pdf"
+						pdf = os.rename(old_name, new_name)
+		 		# Open Table
+				df2 = pd.read_csv(dir_table, index_col=[0])
+				# Cells
+				cell_v = df2.loc[cert_name, "CEU"]
+				cell_m1 = df2.loc[cert_name, "M1"]
+				cell_m2 = df2.loc[cert_name, "M2"]
+				# Adding CEU Value
+				df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
+				# Assigning Mandatories
+				try:
+					if cert_m == 'M1':
+						df2.loc[cert_name, "M1"] = 'X'
+					elif cert_m == 'M2':
+						df2.loc[cert_name, "M2"] = 'X'
+				except NameError:
+					pass
+				# Save Table
+				df2.to_csv(dir_table)
+				# Move Certificate to Employee Files
+				destination = os.path.join(dir_cert, cert_name)
+				move_pdf = cert_name + "!" + x
+				shutil.move(move_pdf, destination)
+				# Clear Variables
+				cert_name = None
+				cert_value = None
+				cert_m = None
+				break
+		else:
+			certificatename = 'Error'
+	if certificatename == 'Error':
+		print('ERROR: Certificate Unreadable.')
+		shutil.move(x, error_destination)
 
- 		text = pytesseract.image_to_string(Image.open(cert_jpeg))
- 		text = text.replace('-\n', '')
+	else:
+		pass
 
- 		# Create Output Text File
- 		outfiletext = (cert_jpeg + ".txt")
- 		f = open(outfiletext, "w") 
- 		f.write(text) 
- 		f.close()
-
-# Count Certificates
-for txt_file in os.listdir(in_path):
- 	if txt_file[-3:] == "txt":
- 		for name in emplist_wval:
- 			with open(txt_file) as f:
- 				if name in f.read():
- 					certificatename = name
- 					break
- 				else:
- 					certificatename = "Not_Found"
-
- 		delim_count = certificatename.count('@')
- 		if delim_count == 1:
- 			cert_name, cert_value = certificatename.split("@")
- 		elif delim_count == 2:
- 			cert_name, cert_value, cert_m = certificatename.split("@")	
-
- 		# Certificate Read Error - No Cert Name
- 		try:
- 			cert_name
- 		except NameError:
- 			print('ERRORS FOUND!')
- 			error_pdf = txt_file[:-9] + ".pdf"
- 			error_destination = os.path.join(in_path, "ERRORS")
- 			shutil.move(error_pdf, error_destination)
- 			error_jpeg = txt_file[:-9] + ".jpeg"
- 			error_txt = txt_file
- 			os.remove(error_jpeg)
- 			os.remove(error_txt)
- 		else:
-			# Rename PDFs
-	 		for pdf in os.listdir(in_path):
-	 			arg_1 = pdf[-3:] == "pdf"
-	 			arg_2 = pdf[:-4] == (txt_file[:-9])
-	 			if arg_1 and arg_2 == True:
-	 				root_name = txt_file[:-9]
-	 				old_name = txt_file[:-9] + ".pdf"
-	 				new_name = cert_name + "!" + root_name + ".pdf"
-	 				pdf = os.rename(old_name, new_name)
-	 		
-	 		# Open Table
-	 		df2 = pd.read_csv(dir_table, index_col=[0])
-
-	 		# Cells - change cert_name back to x
-	 		cell_v = df2.loc[cert_name, "CEU"]
-	 		cell_m1 = df2.loc[cert_name, "M1"]
-	 		cell_m2 = df2.loc[cert_name, "M2"]
-	 		# Adding CEU Value
-	 		df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
-	 		# Assigning Mandatories
-	 		try:
-	 			if cert_m == 'M1':
-	 				df2.loc[cert_name, "M1"] = 'X'
-	 			elif cert_m == 'M2':
-	 				df2.loc[cert_name, "M2"] = 'X'
-	 		except NameError:
-	 			pass
-			# Clear Mandatory
-	 		cert_m = None
-	 		df2.to_csv(dir_table)
-
-# Certificate Directory
-if dir_pkl_s == None:
-	dir_cert = input('Employee Certificate Parent Directory: ')
-else:
-	dir_cert = (dir_pkl_s[3])
-
-# Move Certificate to Employee Files
-for move_file in os.listdir(in_path):
- 	if move_file[-3:] == "pdf":
- 		move_file_name, garbage = (move_file.split("!"))
- 		desination = os.path.join(dir_cert, move_file_name)
- 		shutil.move(move_file, desination)
-
-# Delete TXT Files
-for remove_file in os.listdir(in_path):
- 	if remove_file[-3:] == "txt":
- 		os.remove(remove_file)
-
-# Delete JPEG Files
-for remove_file in os.listdir(in_path):
- 	if remove_file[-4:] == "jpeg":
- 		os.remove(remove_file)
+			
+input_files = os.listdir(in_path)
+for x in input_files:
+	if x[-3:] == "pdf":
+		certificate_counter(x)
+		# Delete JPEG and TXT
+		remove_jpeg = x[:-3] + "jpeg"
+		remove_txt = x[:-3] + "txt"
+		os.remove(remove_jpeg)
+		os.remove(remove_txt)
+	else:
+		pass
 
 # Create Save Files
 save_question = input('Save Directories & Values? y or n: ')
