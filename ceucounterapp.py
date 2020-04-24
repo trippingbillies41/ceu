@@ -128,8 +128,6 @@ def certificate_counter(x):
 				df2 = pd.read_csv(dir_table, index_col=[0])
 				# Cells
 				cell_v = df2.loc[cert_name, "CEU"]
-				cell_m1 = df2.loc[cert_name, "M1"]
-				cell_m2 = df2.loc[cert_name, "M2"]
 				# Adding CEU Value
 				df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
 				# Save Table
@@ -156,20 +154,18 @@ def certificate_counter(x):
 						pdf = os.rename(old_name, new_name)
 		 		# Open Table
 				df2 = pd.read_csv(dir_table, index_col=[0])
+				column_names = list(df2)
+				mands = column_names[1:]
 				# Cells
 				cell_v = df2.loc[cert_name, "CEU"]
-				cell_m1 = df2.loc[cert_name, "M1"]
-				cell_m2 = df2.loc[cert_name, "M2"]
 				# Adding CEU Value
 				df2.loc[cert_name, "CEU"] = (cell_v + float(cert_value))
 				# Assigning Mandatories
-				try:
-					if cert_m == 'M1':
-						df2.loc[cert_name, "M1"] = 'X'
-					elif cert_m == 'M2':
-						df2.loc[cert_name, "M2"] = 'X'
-				except NameError:
-					pass
+				for m in mands:
+					if cert_m == m:
+						df2.loc[cert_name, m] = 'X'
+					else:
+						pass
 				# Save Table
 				df2.to_csv(dir_table)
 				# Move Certificate to Employee Files
