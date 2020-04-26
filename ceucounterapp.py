@@ -49,13 +49,17 @@ if dir_pkl_s == None:
 else:
 	dir_cert = (dir_pkl_s[3])
 
-# Program Directory
+# Tesseract Directory
 if dir_pkl_s == None:
-	dir_tess = input('Where is "Tesseract.exe" Located? ')
+	dir_tess = input('Where is "tesseract.exe" Located? ')
 else:
 	dir_tess = (dir_pkl_s[4])
 
-
+# Poppler Directory
+if dir_pkl_s == None:
+	dir_pop = input('Where is "poppler-0.68.0/bin" Located? ')
+else:
+	dir_pop = (dir_pkl_s[5])
 
 # Check Names vs Folders
 subfolders = os.listdir(dir_cert)
@@ -104,7 +108,7 @@ emplist_wval = set((e+v) for e in emplist for v in values)
 # Create JPEG
 def certificate_counter(x):
 	out_jpeg = x[:-3] + "jpeg"
-	outf = convert_from_path(x)
+	outf = convert_from_path(x, poppler_path = dir_pop)
 	for out in outf:
 		out.save(out_jpeg, 'JPEG')
 	# Read TXT from JPEG
@@ -211,13 +215,17 @@ for x in input_files:
 
 # Create Save Files
 save_question = input('Save Directories & Values? y or n: ')
+dir_app = input('Where is "ceucounterapp.py" Located? ')
+os.chdir(dir_app)
+
 if save_question == 'y':
 	# Directories
-	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert, 4:dir_tess}
+	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert, 4:dir_tess, 5:dir_pop}
 	pickle_out = open("dir_pkl.pickle", "wb")
 	pickle.dump(save_dict, pickle_out)
 	pickle_out.close()
 	# Values
+	os.chdir(in_path)
 	save_values = np.array(values)
 	np.save('values', save_values)
 else:
