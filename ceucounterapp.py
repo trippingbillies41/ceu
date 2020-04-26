@@ -48,6 +48,15 @@ if dir_pkl_s == None:
 	dir_cert = input('Employee Certificate Parent Directory: ')
 else:
 	dir_cert = (dir_pkl_s[3])
+
+# Program Directory
+if dir_pkl_s == None:
+	dir_tess = input('Where is "Tesseract.exe" Located? ')
+else:
+	dir_tess = (dir_pkl_s[4])
+
+
+
 # Check Names vs Folders
 subfolders = os.listdir(dir_cert)
 os.chdir(dir_cert)
@@ -99,6 +108,7 @@ def certificate_counter(x):
 	for out in outf:
 		out.save(out_jpeg, 'JPEG')
 	# Read TXT from JPEG
+	pytesseract.pytesseract.tesseract_cmd = dir_tess
 	text = pytesseract.image_to_string(Image.open(out_jpeg))
 	text = text.replace('-\n', '')
 	# Create TXT File
@@ -203,7 +213,7 @@ for x in input_files:
 save_question = input('Save Directories & Values? y or n: ')
 if save_question == 'y':
 	# Directories
-	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert}
+	save_dict = {1:new_dir_input, 2:dir_table, 3:dir_cert, 4:dir_tess}
 	pickle_out = open("dir_pkl.pickle", "wb")
 	pickle.dump(save_dict, pickle_out)
 	pickle_out.close()
